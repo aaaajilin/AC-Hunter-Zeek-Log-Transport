@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Version 0.5.0 (Modified for Malcolm + AC-Hunter integration)
+#Version 0.5.1 (Modified for Malcolm + AC-Hunter integration)
 #Based on AC-Hunter official zeek_log_transport.sh v0.4.1
 
 #This sends any bro/zeek logs less than three days old to the rita/aihunter server. 
@@ -10,6 +10,8 @@
 #  - Excludes 'current' directory from transfer
 #  - Flattens directory structure with date prefix (e.g., 2026-01-25_conn.log.gz)
 #  - Compatible with RITA rolling import (requires flat structure)
+#  - Adds StrictHostKeyChecking=accept-new so the first non-interactive run (cron)
+#    does not fail on an unknown host key; no ssh-keyscan preparation needed
 
 #Before using this, run these on the rita/aihunter server (use zeek in place of bro if necesssary):
 #sudo adduser dataimport
@@ -177,9 +179,11 @@ else
 	my_id=`echo "$my_id" | cut -c -52`
 fi
 
-extra_ssh_params=' '
+#accept-new writes an unknown host key to known_hosts on first contact but still refuses
+#a changed key, so cron runs do not stall on the interactive host key prompt.
+extra_ssh_params=' -o StrictHostKeyChecking=accept-new '
 if [ -s "$HOME/.ssh/id_rsa_dataimport" ]; then
-	extra_ssh_params=" -i $HOME/.ssh/id_rsa_dataimport "
+	extra_ssh_params=" -i $HOME/.ssh/id_rsa_dataimport -o StrictHostKeyChecking=accept-new "
 fi
 
 #Make sure we can ssh to the aihunter system first
